@@ -15,3 +15,6 @@ venv/
 # IDEs
 .vscode/
 .idea/
+
+# Planning
+expansion_plan.md
