@@ -17,7 +17,7 @@ const GROUND_TRUTH_ERRORS = [2];
 export default function Home() {
   const [studentId, setStudentId] = useState<string>("Загрузка...");
   const [marks, setMarks] = useState<{green: number[], yellow: number[], red: number[]}>({ green: [], yellow: [], red: [] });
-  const [activeColor, setActiveColor] = useState<'green' | 'yellow' | 'red' | null>(null);
+  const [activeColor, setActiveColor] = useState<'green' | 'yellow' | 'red' | null>('green');
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [diagnosis, setDiagnosis] = useState<any>(null);
