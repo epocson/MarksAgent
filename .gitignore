@@ -18,3 +18,10 @@ venv/
 
 # Planning
 expansion_plan.md
+
+# Databases and Local Data
+*.db
+*.sqlite
+*.sqlite3
+data/
+
