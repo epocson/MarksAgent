@@ -11,7 +11,7 @@ class TutorSettings(BaseSettings):
     redis_host: str = "localhost"
     redis_port: int = 6379
     llm_base_url: str = "http://localhost:11434/v1"
-    llm_model: str = "llama3"
+    llm_model: str = "llama3:8b"
     llm_api_key: str = "ollama"
     
     class Config:
