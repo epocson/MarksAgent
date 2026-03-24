@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import signal
 import redis.asyncio as redis
 from openai import AsyncOpenAI
 from pydantic_settings import BaseSettings
@@ -16,16 +17,18 @@ class TutorSettings(BaseSettings):
     
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 settings = TutorSettings()
 
 class TutorAgent:
     def __init__(self):
-        self.redis_client = redis.Redis(host=settings.redis_host, port=settings.redis_port, decode_responses=True)
+        self.redis_client = None
         self.llm_client = AsyncOpenAI(
             base_url=settings.llm_base_url,
             api_key=settings.llm_api_key
         )
+        self.shutdown_event = asyncio.Event()
 
     def generate_prompt(self, cognitive_pattern: str, metrics: dict, xai: dict) -> str:
         prompt = f"""
@@ -82,26 +85,46 @@ Recall (Полнота): {metrics.get('recall', 'Н/Д')}
             "cognitive_pattern": pattern
         }
         
-        await self.redis_client.publish('tutor_agent_results', json.dumps(result, ensure_ascii=False))
-        logging.info(f"LLM Feedback published to queue for {student_id}.")
+        if self.redis_client:
+            await self.redis_client.publish('tutor_agent_results', json.dumps(result, ensure_ascii=False))
+            logging.info(f"LLM Feedback published to queue for {student_id}.")
+
+    def handle_shutdown(self, sig):
+        logging.info(f"Received signal {sig}. Gracefully shutting down TutorAgent...")
+        self.shutdown_event.set()
 
     async def listen(self):
+        self.redis_client = redis.Redis(host=settings.redis_host, port=settings.redis_port, decode_responses=True)
+        pubsub = self.redis_client.pubsub()
+        await pubsub.subscribe('marks_agent_results')
+        
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.add_signal_handler(sig, self.handle_shutdown, sig)
+            except NotImplementedError:
+                pass
+                
+        logging.info("TutorAgent started listening to marks_agent_results...")
+        tasks = set()
+        
         try:
-            pubsub = self.redis_client.pubsub()
-            await pubsub.subscribe('marks_agent_results')
-            logging.info("TutorAgent started listening to marks_agent_results...")
-            
-            async for message in pubsub.listen():
-                if message['type'] == 'message':
-                    try:
-                        data = json.loads(message['data'])
-                        # Запускаем обработку в фоне, чтобы не блокировать очередь,
-                        # если LLM генерирует ответ 10-15 секунд
-                        asyncio.create_task(self.process_message(data))
-                    except Exception as e:
-                        logging.error(f"Error processing marks result: {e}")
+            while not self.shutdown_event.is_set():
+                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                if message and message['type'] == 'message':
+                    data = json.loads(message['data'])
+                    task = asyncio.create_task(self.process_message(data))
+                    tasks.add(task)
+                    task.add_done_callback(tasks.discard)
         except Exception as e:
             logging.error(f"TutorAgent Redis connection error: {e}")
+        finally:
+            logging.info("Awaiting pending LLM requests to finish...")
+            if tasks:
+                await asyncio.gather(*tasks, return_exceptions=True)
+            await pubsub.unsubscribe('marks_agent_results')
+            await self.redis_client.close()
+            logging.info("TutorAgent shut down completely.")
 
 if __name__ == "__main__":
     agent = TutorAgent()
