@@ -56,16 +56,20 @@ export default function Home() {
     if (!activeColor) return;
     
     setMarks(prev => {
-      const newMarks = { ...prev };
-      // Удаляем индекс из других цветов, если он там был
-      if (newMarks.green.includes(index)) newMarks.green = newMarks.green.filter(i => i !== index);
-      if (newMarks.yellow.includes(index)) newMarks.yellow = newMarks.yellow.filter(i => i !== index);
-      if (newMarks.red.includes(index)) newMarks.red = newMarks.red.filter(i => i !== index);
+      // Глубокое копирование для React (избегаем мутации)
+      const newMarks = {
+        green: [...prev.green],
+        yellow: [...prev.yellow],
+        red: [...prev.red]
+      };
       
-      // Добавляем или убираем текущий
-      if (prev[activeColor].includes(index)) {
-        newMarks[activeColor] = newMarks[activeColor].filter(i => i !== index);
-      } else {
+      // Удаляем этот абзац из ВСЕХ цветов, чтобы перекрасить
+      newMarks.green = newMarks.green.filter(i => i !== index);
+      newMarks.yellow = newMarks.yellow.filter(i => i !== index);
+      newMarks.red = newMarks.red.filter(i => i !== index);
+      
+      // Если до клика этот абзац НЕ был такого же цвета, то добавляем новый цвет
+      if (!prev[activeColor].includes(index)) {
         newMarks[activeColor].push(index);
       }
       return newMarks;
