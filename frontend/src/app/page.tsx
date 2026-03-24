@@ -15,7 +15,7 @@ const ARTICLE = [
 const GROUND_TRUTH_ERRORS = [2]; 
 
 export default function Home() {
-  const [studentId] = useState("student_UI_" + Math.floor(Math.random() * 10000));
+  const [studentId, setStudentId] = useState<string>("Загрузка...");
   const [marks, setMarks] = useState<{green: number[], yellow: number[], red: number[]}>({ green: [], yellow: [], red: [] });
   const [activeColor, setActiveColor] = useState<'green' | 'yellow' | 'red' | null>(null);
   
@@ -27,7 +27,14 @@ export default function Home() {
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // Подключаемся к WebSocket для получения real-time фидбека
+    // 1. Устанавливаем уникальный ID только один раз при маунте 
+    setStudentId("student_UI_" + Math.floor(Math.random() * 10000));
+  }, []);
+
+  useEffect(() => {
+    if (studentId === "Загрузка...") return; // Ждем успешной генерации ID
+
+    // 2. Подключаемся к WebSocket
     ws.current = new WebSocket(`ws://localhost:8000/api/v1/ws/${studentId}`);
     
     ws.current.onmessage = (event) => {
