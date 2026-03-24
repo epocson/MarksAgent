@@ -82,16 +82,22 @@ async def submit_marks(payload: StudentPayload):
 
 @app.get("/api/v1/student/{student_id}")
 async def get_student_profile(student_id: str):
-    async with db_client.execute("SELECT * FROM students_profiles WHERE student_id = ?", (student_id,)) as cursor:
-        row = await cursor.fetchone()
-        if row:
-            return {
-                "student_id": row["student_id"],
-                "cognitive_pattern": row["cognitive_pattern"],
-                "metrics": json.loads(row["metrics"]) if row["metrics"] else {}
-            }
-        else:
-            raise HTTPException(status_code=404, detail="Student not found in database")
+    try:
+        async with db_client.execute("SELECT * FROM students_profiles WHERE student_id = ?", (student_id,)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                return {
+                    "student_id": row["student_id"],
+                    "cognitive_pattern": row["cognitive_pattern"],
+                    "metrics": json.loads(row["metrics"]) if row["metrics"] else {}
+                }
+            else:
+                raise HTTPException(status_code=404, detail="Student not found in database")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Database error for student {student_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.websocket("/api/v1/ws/{student_id}")
 async def websocket_endpoint(websocket: WebSocket, student_id: str):

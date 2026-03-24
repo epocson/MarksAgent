@@ -23,11 +23,18 @@ async def test_fastapi():
             print(f"Статус: {response.status_code}")
             print(f"Ответ: {response.json()}")
 
-            print("\n⏳ Ждем 2 секунды, пока MarksAgent обработает JSON и сохранит в SQLite...")
-            await asyncio.sleep(2)
+            print("\n⏳ Polling: ждем, пока MarksAgent обработает JSON и сохранит в SQLite...")
+            max_attempts = 10
+            poll_interval = 0.5
+            response = None
+            for attempt in range(1, max_attempts + 1):
+                await asyncio.sleep(poll_interval)
+                response = await client.get("/api/v1/student/api_test_student_1")
+                print(f"   Попытка {attempt}/{max_attempts} — Статус: {response.status_code}")
+                if response.status_code == 200:
+                    break
 
-            print("\n2️⃣ [GET] Запрашиваем готовый профиль студента из API...")
-            response = await client.get("/api/v1/student/api_test_student_1")
+            print("\n2️⃣ [GET] Итоговый ответ от API:")
             print(f"Статус: {response.status_code}")
             print("👤 Итоговый Профиль студента:")
             print(json.dumps(response.json(), indent=2, ensure_ascii=False))
