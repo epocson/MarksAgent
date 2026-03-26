@@ -1,27 +1,9 @@
-# Python
+node_modules/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-.env
-
-# MacOS
-.DS_Store
-
-# IDEs
-.vscode/
-.idea/
-
-# Planning
-expansion_plan.md
-
-# Databases and Local Data
 *.db
-*.sqlite
-*.sqlite3
-data/
-
+.DS_Store
+.env
+backend/data/
+.venv/
+venv/

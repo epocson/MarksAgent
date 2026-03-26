@@ -1,0 +1,26 @@
+image: python:3.11
+
+stages:
+  - publish
+
+variables:
+  PYPI_REPOSITORY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
+
+publish:
+  stage: publish
+  script:
+    - pip install build twine
+    - python -m build
+    - |
+      TWINE_PASSWORD=${CI_JOB_TOKEN} \
+      TWINE_USERNAME=gitlab-ci-token \
+      python -m twine upload \
+        --repository-url ${PYPI_REPOSITORY_URL} \
+        dist/*
+  only:
+    - master
+  tags:
+    - peai-docker-server
+  artifacts:
+    paths:
+      - dist/

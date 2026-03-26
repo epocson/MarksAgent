@@ -35,7 +35,9 @@ export default function Home() {
     if (studentId === "Загрузка...") return; // Ждем успешной генерации ID
 
     // 2. Подключаемся к WebSocket
-    ws.current = new WebSocket(`ws://localhost:8000/api/v1/ws/${studentId}`);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const wsUrl = apiUrl.replace("http://", "ws://").replace("https://", "wss://");
+    ws.current = new WebSocket(`${wsUrl}/api/v1/ws/${studentId}`);
     
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -96,7 +98,8 @@ export default function Home() {
     };
 
     try {
-      await fetch("http://localhost:8000/api/v1/submit_marks", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      await fetch(`${apiUrl}/api/v1/submit_marks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Для избежания CORS в разработке, бэк настроен принимать все origin.

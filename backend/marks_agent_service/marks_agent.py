@@ -5,33 +5,12 @@ import signal
 import redis.asyncio as redis
 import aiosqlite
 import os
-from typing import Dict, Any, List, Optional
-from pydantic import BaseModel, Field, ValidationError
-from pydantic_settings import BaseSettings
+from typing import Dict, Any, List
+from pydantic import ValidationError
+from marks_agent import settings, StudentPayload, MarksSchema
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-class Settings(BaseSettings):
-    redis_host: str = "localhost"
-    redis_port: int = 6379
-    db_path: str = "data/students_profiles.db"
-    
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
-
-settings = Settings()
-
-class MarksSchema(BaseModel):
-    green: List[int] = Field(default_factory=list)
-    yellow: List[int] = Field(default_factory=list)
-    red: List[int] = Field(default_factory=list)
-
-class StudentPayload(BaseModel):
-    student_id: str
-    total_fragments: int
-    marks: MarksSchema = Field(default_factory=MarksSchema)
-    ground_truth_errors: Optional[List[int]] = None
 
 class MarksAgent:
     def __init__(self, redis_host: str = settings.redis_host, redis_port: int = settings.redis_port, db_path: str = settings.db_path):

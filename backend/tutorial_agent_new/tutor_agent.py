@@ -5,21 +5,10 @@ import signal
 import redis.asyncio as redis
 from openai import AsyncOpenAI
 from pydantic_settings import BaseSettings
+from marks_agent import settings
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-class TutorSettings(BaseSettings):
-    redis_host: str = "localhost"
-    redis_port: int = 6379
-    llm_base_url: str = "http://localhost:11434/v1"
-    llm_model: str = "llama3:8b"
-    llm_api_key: str = "ollama"
-    
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
-
-settings = TutorSettings()
 
 class TutorAgent:
     def __init__(self):

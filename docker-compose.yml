@@ -1,47 +1,56 @@
-version: '3.8'
-
 services:
   redis:
-    image: redis:latest
+    image: redis:alpine
     ports:
       - "6379:6379"
 
-  marks_agent:
-    build: .
-    depends_on:
-      - redis
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - DB_PATH=data/students_profiles.db
-    volumes:
-      - ./data:/app/data
-
-  tutor_agent:
-    build: .
-    depends_on:
-      - redis
-    command: python tutor_agent.py
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      # host.docker.internal нужен, чтобы контейнер достучался до Ollama на хосте Mac
-      - LLM_BASE_URL=http://host.docker.internal:11434/v1
-      - LLM_MODEL=llama3:8b
-      - LLM_API_KEY=ollama
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  api_gateway:
-    build: .
-    depends_on:
-      - redis
-    command: uvicorn api_gateway:app --host 0.0.0.0 --port 8000
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: ./api-gateway/Dockerfile
     ports:
       - "8000:8000"
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - DB_PATH=data/students_profiles.db
+      - DB_PATH=/app/data/students_profiles.db
     volumes:
-      - ./data:/app/data
+      - ./backend/data:/app/data
+    depends_on:
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api-gateway
+
+  marks-agent:
+    build:
+      context: ./backend
+      dockerfile: ./marks_agent_service/Dockerfile
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DB_PATH=/app/data/students_profiles.db
+    volumes:
+      - ./backend/data:/app/data
+    depends_on:
+      - redis
+
+  tutor-agent:
+    build:
+      context: ./backend
+      dockerfile: ./tutorial_agent_new/Dockerfile
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - LLM_BASE_URL=http://host.docker.internal:11434/v1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - redis
