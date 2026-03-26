@@ -12,18 +12,18 @@ const ARTICLE = [
 ];
 
 // Ground truth (Основано на индексе предложений) - 2-е предложение в массиве
-const GROUND_TRUTH_ERRORS = [2];
+const GROUND_TRUTH_ERRORS = [2]; 
 
 export default function Home() {
   const [studentId, setStudentId] = useState<string>("Загрузка...");
-  const [marks, setMarks] = useState<{ green: number[], yellow: number[], red: number[] }>({ green: [], yellow: [], red: [] });
+  const [marks, setMarks] = useState<{green: number[], yellow: number[], red: number[]}>({ green: [], yellow: [], red: [] });
   const [activeColor, setActiveColor] = useState<'green' | 'yellow' | 'red' | null>('green');
-
+  
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [diagnosis, setDiagnosis] = useState<any>(null);
   const [tutorFeedback, setTutorFeedback] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -35,8 +35,10 @@ export default function Home() {
     if (studentId === "Загрузка...") return; // Ждем успешной генерации ID
 
     // 2. Подключаемся к WebSocket
-    ws.current = new WebSocket(`ws://localhost:8000/api/v1/ws/${studentId}`);
-
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const wsUrl = apiUrl.replace("http://", "ws://").replace("https://", "wss://");
+    ws.current = new WebSocket(`${wsUrl}/api/v1/ws/${studentId}`);
+    
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.source_agent === 'marks_agent_results') {
@@ -54,7 +56,7 @@ export default function Home() {
 
   const toggleMark = (index: number) => {
     if (!activeColor) return;
-
+    
     setMarks(prev => {
       // Глубокое копирование для React (избегаем мутации)
       const newMarks = {
@@ -62,12 +64,12 @@ export default function Home() {
         yellow: [...prev.yellow],
         red: [...prev.red]
       };
-
+      
       // Удаляем этот абзац из ВСЕХ цветов, чтобы перекрасить
       newMarks.green = newMarks.green.filter(i => i !== index);
       newMarks.yellow = newMarks.yellow.filter(i => i !== index);
       newMarks.red = newMarks.red.filter(i => i !== index);
-
+      
       // Если до клика этот абзац НЕ был такого же цвета, то добавляем новый цвет
       if (!prev[activeColor].includes(index)) {
         newMarks[activeColor].push(index);
@@ -87,7 +89,7 @@ export default function Home() {
     setIsSubmitting(true);
     setDiagnosis(null);
     setTutorFeedback("");
-
+    
     const payload = {
       student_id: studentId,
       total_fragments: ARTICLE.length,
@@ -96,7 +98,8 @@ export default function Home() {
     };
 
     try {
-      await fetch("http://localhost:8000/api/v1/submit_marks", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      await fetch(`${apiUrl}/api/v1/submit_marks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Для избежания CORS в разработке, бэк настроен принимать все origin.
@@ -111,7 +114,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-slate-100 p-8 font-sans selection:bg-indigo-100">
       <div className="max-w-6xl mx-auto space-y-8">
-
+        
         {/* Header Section */}
         <header className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 flex justify-between items-center transition-all duration-300 hover:shadow-md">
           <div>
@@ -119,19 +122,19 @@ export default function Home() {
             <p className="text-slate-500 mt-2 font-medium">Ваш профиль: <span className="text-indigo-500 font-mono bg-indigo-50 px-2 py-1 rounded-md">{studentId}</span></p>
           </div>
           <div className="flex gap-4">
-            <button
+            <button 
               onClick={() => setActiveColor('green')}
               className={`px-6 py-3 rounded-xl font-bold transition-all duration-300 transform active:scale-95 ${activeColor === 'green' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200 ring-2 ring-emerald-500 ring-offset-2' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
             >
               Правда (Зеленый)
             </button>
-            <button
+            <button 
               onClick={() => setActiveColor('yellow')}
               className={`px-6 py-3 rounded-xl font-bold transition-all duration-300 transform active:scale-95 ${activeColor === 'yellow' ? 'bg-amber-500 text-white shadow-lg shadow-amber-200 ring-2 ring-amber-500 ring-offset-2' : 'bg-amber-50 text-amber-600 hover:bg-amber-100'}`}
             >
               Сомнение (Желтый)
             </button>
-            <button
+            <button 
               onClick={() => setActiveColor('red')}
               className={`px-6 py-3 rounded-xl font-bold transition-all duration-300 transform active:scale-95 ${activeColor === 'red' ? 'bg-rose-500 text-white shadow-lg shadow-rose-200 ring-2 ring-rose-500 ring-offset-2' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'}`}
             >
@@ -141,15 +144,15 @@ export default function Home() {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
+          
           {/* Article Workspace */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-3xl p-10 shadow-sm border border-slate-200">
               <h2 className="text-xl font-bold text-slate-800 mb-6 border-b pb-4">Задание: Проверьте факты в статье</h2>
               <div className="space-y-4 text-lg leading-relaxed">
                 {ARTICLE.map((sentence, idx) => (
-                  <p
-                    key={idx}
+                  <p 
+                    key={idx} 
                     onClick={() => toggleMark(idx)}
                     className={`cursor-pointer p-4 rounded-2xl border-2 transition-all duration-200 transform ${getHighlightColor(idx)}`}
                   >
@@ -159,8 +162,8 @@ export default function Home() {
               </div>
             </div>
 
-            <button
-              onClick={handleSubmit}
+            <button 
+              onClick={handleSubmit} 
               disabled={isSubmitting}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xl py-5 rounded-3xl shadow-xl shadow-indigo-200 transition-all duration-300 transform hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3"
             >
@@ -215,7 +218,7 @@ export default function Home() {
                     </div>
                   ) : (
                     <div className="bg-slate-700/50 p-4 rounded-2xl border border-slate-600 border-dashed animate-pulse h-32 flex items-center justify-center text-slate-500 text-center text-sm">
-                      Ожидание когнитивного<br />паттерна студента...
+                      Ожидание когнитивного<br/>паттерна студента...
                     </div>
                   )}
                 </div>
