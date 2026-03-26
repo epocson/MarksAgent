@@ -1,0 +1,20 @@
+# backend/marks_agent/pyproject.toml
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mark-agent-models"
+version = "1.0.0"
+description = "Models for Mark Agent"
+requires-python = ">=3.8"
+dependencies = [
+    "pydantic==2.6.4",
+    "pydantic-settings==2.2.1"
+]
+
+[tool.setuptools]
+packages = ["marks_agent"]
+
+[tool.setuptools.package-dir]
+marks_agent = "."

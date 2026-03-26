@@ -1,0 +1,7 @@
+--index-url https://mirrors.aliyun.com/pypi/simple/
+--extra-index-url https://gitlab-ci-token:${GITLAB_TOKEN}@gitlab.com/api/v4/groups/127470531/-/packages/pypi/simple
+--trusted-host gitlab.com
+redis==5.0.3
+pydantic==2.6.4
+aiosqlite==0.20.0
+mark-agent-models
